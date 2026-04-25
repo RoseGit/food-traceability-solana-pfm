@@ -9,10 +9,10 @@ pub use constants::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("AwHQ1mST9r1xA7twQ5WpAbdcsbStJ2mtYijzL5C5sHV4");
+declare_id!("HMB8KtLoTZcsCCQF8Bufjzf28XXjr21pKW3uENPLGrEW");
 
 #[program]
-pub mod traza {
+pub mod food_traceability {
     use super::*;
 
     pub fn initialize(ctx: Context<Initialize>) -> Result<()> {

@@ -10,17 +10,17 @@ use {
 
 #[test]
 fn test_initialize() {
-    let program_id = traza::id();
+    let program_id = food_traceability::id();
     let payer = Keypair::new();
     let mut svm = LiteSVM::new();
-    let bytes = include_bytes!("../../../target/deploy/traza.so");
+    let bytes = include_bytes!("../../../target/deploy/food_traceability.so");
     svm.add_program(program_id, bytes).unwrap();
     svm.airdrop(&payer.pubkey(), 1_000_000_000).unwrap();
     
     let instruction = Instruction::new_with_bytes(
         program_id,
-        &traza::instruction::Initialize {}.data(),
-        traza::accounts::Initialize {}.to_account_metas(None),
+        &food_traceability::instruction::Initialize {}.data(),
+        food_traceability::accounts::Initialize {}.to_account_metas(None),
     );
 
     let blockhash = svm.latest_blockhash();
