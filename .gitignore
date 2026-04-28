@@ -33,3 +33,18 @@ build/
 
 # Anchor
 .anchor/
+
+node_modules/
+dist/
+target/
+test-ledger/
+.anchor/
+
+# Ignorar carpetas de Solana en cualquier nivel
+**/test-ledger/
+**/target/
+**/.anchor/
+
+# Específicamente para la carpeta web si quieres ser más precisa
+web/test-ledger/
+web/.next/

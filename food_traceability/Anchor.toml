@@ -7,10 +7,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-food_traceability = "HMB8KtLoTZcsCCQF8Bufjzf28XXjr21pKW3uENPLGrEW"
+food_traceability = "Fw6zjywTLYyq7DLLQkiBGHgpKteCpgbamrHbXdiJdgCg"
 
 [provider]
-cluster = "localnet"
+cluster = "http://127.0.0.1:8899"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

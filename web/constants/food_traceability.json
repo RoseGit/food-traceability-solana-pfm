@@ -1,0 +1,432 @@
+{
+  "address": "Fw6zjywTLYyq7DLLQkiBGHgpKteCpgbamrHbXdiJdgCg",
+  "metadata": {
+    "name": "food_traceability",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "initialize",
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "ProgramConfig",
+      "discriminator": [
+        196,
+        210,
+        90,
+        231,
+        144,
+        149,
+        140,
+        63
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "ActorRegistered",
+      "discriminator": [
+        192,
+        208,
+        105,
+        215,
+        222,
+        240,
+        70,
+        126
+      ]
+    },
+    {
+      "name": "BatchCreated",
+      "discriminator": [
+        231,
+        92,
+        210,
+        203,
+        2,
+        59,
+        109,
+        234
+      ]
+    },
+    {
+      "name": "BatchEventRecorded",
+      "discriminator": [
+        157,
+        10,
+        56,
+        192,
+        216,
+        178,
+        209,
+        84
+      ]
+    },
+    {
+      "name": "BatchStatusChanged",
+      "discriminator": [
+        206,
+        91,
+        111,
+        238,
+        111,
+        6,
+        187,
+        131
+      ]
+    },
+    {
+      "name": "CertificateIssued",
+      "discriminator": [
+        62,
+        59,
+        26,
+        207,
+        181,
+        234,
+        201,
+        52
+      ]
+    },
+    {
+      "name": "CertificateRevoked",
+      "discriminator": [
+        99,
+        180,
+        224,
+        20,
+        200,
+        221,
+        133,
+        47
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "CustomError",
+      "msg": "Custom error message"
+    },
+    {
+      "code": 6001,
+      "name": "OnlyProducersCanCreate",
+      "msg": "Solo los usuarios con el rol de Productor pueden crear lotes."
+    },
+    {
+      "code": 6002,
+      "name": "ProductTooLong",
+      "msg": "El nombre del producto es demasiado largo."
+    },
+    {
+      "code": 6003,
+      "name": "OriginTooLong",
+      "msg": "El origen proporcionado es demasiado largo."
+    },
+    {
+      "code": 6004,
+      "name": "OnlyAuthoritiesCanIssue",
+      "msg": "Solo las cuentas con rol de Autoridad pueden emitir certificados."
+    }
+  ],
+  "types": [
+    {
+      "name": "ActorRegistered",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "actor_address",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "role",
+            "type": {
+              "defined": {
+                "name": "ActorRole"
+              }
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ActorRole",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Producer"
+          },
+          {
+            "name": "Processor"
+          },
+          {
+            "name": "Transporter"
+          },
+          {
+            "name": "Exporter"
+          },
+          {
+            "name": "Authority"
+          },
+          {
+            "name": "Auditor"
+          },
+          {
+            "name": "Distributor"
+          },
+          {
+            "name": "Retailer"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BatchCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "batch_id",
+            "type": "u64"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "product",
+            "type": "string"
+          },
+          {
+            "name": "origin",
+            "type": "string"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BatchEventRecorded",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "event_id",
+            "type": "u64"
+          },
+          {
+            "name": "batch_id",
+            "type": "u64"
+          },
+          {
+            "name": "event_type",
+            "type": "string"
+          },
+          {
+            "name": "actor",
+            "type": "pubkey"
+          },
+          {
+            "name": "location",
+            "type": "string"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BatchStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Created"
+          },
+          {
+            "name": "InProcessing"
+          },
+          {
+            "name": "InTransit"
+          },
+          {
+            "name": "QualityCheck"
+          },
+          {
+            "name": "Exported"
+          },
+          {
+            "name": "Delivered"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BatchStatusChanged",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "batch_id",
+            "type": "u64"
+          },
+          {
+            "name": "new_status",
+            "type": {
+              "defined": {
+                "name": "BatchStatus"
+              }
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CertificateIssued",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "certificate_id",
+            "type": "u64"
+          },
+          {
+            "name": "batch_id",
+            "type": "u64"
+          },
+          {
+            "name": "certificate_type",
+            "type": "string"
+          },
+          {
+            "name": "issuer",
+            "type": "string"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CertificateRevoked",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "certificate_id",
+            "type": "u64"
+          },
+          {
+            "name": "reason",
+            "type": "string"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProgramConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "next_batch_id",
+            "type": "u64"
+          },
+          {
+            "name": "next_event_id",
+            "type": "u64"
+          },
+          {
+            "name": "next_certificate_id",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ],
+  "constants": [
+    {
+      "name": "SEED",
+      "type": "string",
+      "value": "\"anchor\""
+    }
+  ]
+}
