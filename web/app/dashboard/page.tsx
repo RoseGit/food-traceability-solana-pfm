@@ -113,32 +113,44 @@ export default function Dashboard() {
 
   const handleRequestRole = async (role: string) => {
     if (!program || !publicKey) {
-      alert("Por favor, conecta tu wallet primero");
-      return;
-    }
+    alert("Por favor, conecta tu wallet primero");
+    return;
+  }
 
-    try {
-      setLoading(true);
-      setSelectedRole(role);
-      const roleParam = { [role.toLowerCase()]: {} }; 
+  try {
+    setLoading(true);
+    setSelectedRole(role);
 
-      const tx = await program.methods
-        .registerActor("Usuario Nuevo", roleParam, "Ubicación pendiente")
-        .accounts({
-            // Anchor 0.29+ suele inferir estas cuentas si están en el IDL,
-            // pero si te da error, descomenta las de abajo:
-            // actor: publicKey,
-            // systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .rpc();
+    // Convertimos el string del rol al formato que espera el Enum en Rust
+    // Ej: "Producer" -> { producer: {} }
+    const roleParam = { [role.toLowerCase()]: {} }; 
 
-      setRequestPending(true);
-    } catch (error: any) {
-      console.error("Error al registrar:", error);
-      alert("Error: " + error.message);
-    } finally {
-      setLoading(false);
-    }
+    console.log("Enviando solicitud para el rol:", roleParam);
+
+    // LLAMADA AL NUEVO MÉTODO
+    const tx = await program.methods
+      .requestRole(
+        "Usuario Nuevo", // Puedes cambiar esto por un input de nombre más adelante
+        roleParam, 
+        "Ubicación pendiente"
+      )
+      .accounts({
+        // La PDA 'roleRequest' y 'systemProgram' suelen ser 
+        // inferidas automáticamente por Anchor 0.30+
+      })
+      .rpc();
+
+    console.log("Transacción de solicitud exitosa:", tx);
+    
+    // Cambiamos el estado para mostrar la vista de "Pendiente"
+    setRequestPending(true); 
+
+  } catch (error: any) {
+    console.error("Error al solicitar rol:", error);
+    alert("Error: " + error.message);
+  } finally {
+    setLoading(false);
+  }
   };
 
   // --- CORRECCIÓN EN LA RENDERIZACIÓN ---
@@ -148,39 +160,21 @@ export default function Dashboard() {
     return <div className="bg-[#0f1114] min-h-screen flex items-center justify-center text-white">Cargando...</div>;
   }
 
-  // 1. Si no está inicializado
+  // 2. Si no está inicializado
   if (isInitialized === false) {
-    return (
-      <InitializeView 
-        onInitialize={handleInitialize} 
-        loading={loading} 
-        connected={connected} 
-        status={status} 
-      />
-    );
+    return <InitializeView onInitialize={handleInitialize} loading={loading} connected={connected} status={status} />;
   }
 
-  // 2. SI ES ADMIN: Mostramos su dashboard especial
+  // 3. SI EL USUARIO ES ADMIN: Mostrar Dashboard de Admin
   if (isAdmin) {
-    return <AdminDashboardView />;
-  }    
-
-  // 3. Si la solicitud de rol está pendiente
-  if (requestPending) {
-    return (
-      <PendingRequest 
-        selectedRole={selectedRole} 
-        onBack={() => setRequestPending(false)} 
-      />
-    );
+    return <AdminDashboardView program={program} />;
   }
 
-  // 4. Si ya está inicializado y no hay solicitud pendiente, mostramos selección de roles
-  return (
-    <RoleSelection 
-      onSelectRole={handleRequestRole} 
-      loading={loading} 
-      selectedRole={selectedRole} 
-    />
-  );
+  // 4. Si la solicitud de rol está pendiente (Para usuarios comunes)
+  if (requestPending) {
+    return <PendingRequest selectedRole={selectedRole} onBack={() => setRequestPending(false)} />;
+  }
+
+  // 5. Pantalla normal de selección de roles
+  return <RoleSelection onSelectRole={handleRequestRole} loading={loading} selectedRole={selectedRole} />;
 }

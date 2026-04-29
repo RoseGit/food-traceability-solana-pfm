@@ -30,6 +30,27 @@ pub enum CertificateStatus {
     Revoked,
 }
 
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
+pub enum RequestStatus {
+    Pending,
+    Approved,
+    Rejected,
+}
+
+#[account]
+pub struct RoleRequest {
+    pub user: Pubkey,              // Quién solicita
+    pub requested_role: ActorRole, // Qué rol quiere
+    pub name: String,
+    pub location: String,
+    pub status: RequestStatus, // Pendiente, Aprobado, Rechazado
+    pub bump: u8,
+}
+
+impl RoleRequest {
+    pub const SIZE: usize = 8 + 32 + (1 + 1) + 4 + 50 + 4 + 50 + 1 + 1;
+}
+
 // Struct principal: Lote
 #[account]
 pub struct Batch {

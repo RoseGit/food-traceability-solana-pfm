@@ -8,11 +8,12 @@ use anchor_lang::prelude::*;
 
 // Importamos individualmente los módulos de instrucciones
 // Esto ayuda al macro #[program] a encontrar los structs sin ambigüedad
+use crate::instructions::approve_actor::*;
 use crate::instructions::create_batch::*;
 use crate::instructions::initialize::*;
 use crate::instructions::issue_certificate::*;
 use crate::instructions::record_event::*;
-use crate::instructions::register_actor::*;
+use crate::instructions::request_role::*;
 use crate::instructions::revoke_certificate::*;
 use crate::instructions::update_status::*;
 
@@ -29,13 +30,21 @@ pub mod food_traceability {
         crate::instructions::initialize::handler(ctx)
     }
 
-    pub fn register_actor(
-        ctx: Context<RegisterActor>,
+    // 2. Solicitud de Rol (Usuario/Actor)
+    // Cambiamos 'register_actor' por 'request_role'
+    pub fn request_role(
+        ctx: Context<RequestRole>,
         name: String,
         role: state::ActorRole,
         location: String,
     ) -> Result<()> {
-        crate::instructions::register_actor::handler(ctx, name, role, location)
+        instructions::request_role::handler(ctx, name, role, location)
+    }
+
+    // 3. Aprobación de Actor (Solo el Admin)
+    // Nueva función para formalizar el registro
+    pub fn approve_actor(ctx: Context<ApproveActor>) -> Result<()> {
+        instructions::approve_actor::handler(ctx)
     }
 
     pub fn create_batch(
