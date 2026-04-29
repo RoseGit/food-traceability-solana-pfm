@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { PublicKey } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
 import { AdminDashboardView } from './components/AdminDashboardView';
+import { ActorDashboardView } from './components/ActorDashboardView';
 
 // Componentes modularizados
 import { InitializeView } from './components/InitializeView';
@@ -16,6 +17,9 @@ import { PendingRequest } from './components/PendingRequest';
 export default function Dashboard() {
   const [mounted, setMounted] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isActor, setIsActor] = useState(false);
+  const [actorData, setActorData] = useState<any>(null);
+
   const [isInitialized, setIsInitialized] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ message: string; type: 'error' | 'success' | 'info' | null }>({
@@ -36,31 +40,77 @@ export default function Dashboard() {
 
   // Verificar inicialización
   useEffect(() => {
-    const checkStatus = async () => {
-      if (!program || !publicKey) return;
+      const checkStatus = async () => {
+        if (!program || !publicKey) return;
 
-      try {
-        const [configPDA] = PublicKey.findProgramAddressSync(
-          [Buffer.from("config")],
-          program.programId
-        );
-        console.log("📍 [CheckStatus] PDA de configuración generada:", configPDA.toBase58());
+        try {
+          const [configPDA] = PublicKey.findProgramAddressSync([Buffer.from("config")], program.programId);
+          const configAccount = await program.account.programConfig.fetch(configPDA);
+          
+          if (configAccount) {
+            // Si llegamos aquí, la cuenta existe, por lo tanto ESTÁ inicializado
+            setIsInitialized(true);            
+            const isAdministrator = configAccount.authority.toBase58() === publicKey.toBase58();
+            setIsAdmin(isAdministrator);
+            const currentWallet = publicKey.toBase58();
+            const adminWallet = configAccount.authority.toBase58();
+            
+            console.log("Admin en cuenta:", adminWallet);
+            console.log("Tu Wallet:", currentWallet);
+            
+           if(isAdministrator){
+            return;
+           }
+          }          
 
-        // Cambia 'programConfig' por el nombre exacto que salga en tu IDL JSON
-        const account = await program.account.programConfig.fetch(configPDA);
-        console.log("✅ [CheckStatus] Cuenta encontrada! Datos:", account);
+          
 
-        if (account){
-          setIsInitialized(true);
-          // VERIFICACIÓN DE ADMIN: Comparamos la autoridad guardada con la wallet actual
-          const authorityKey = account.authority.toBase58();
-          setIsAdmin(authorityKey === publicKey.toBase58());
-          console.log("¿Es Admin?:", authorityKey === publicKey.toBase58());
+                    // 2. VERIFICAR SI ES UN ACTOR REGISTRADO
+          const [actorPDA] = PublicKey.findProgramAddressSync(
+            [Buffer.from("actor"), publicKey.toBuffer()],
+            program.programId
+          );
+
+          try {
+            const actorAccount = await program.account.actor.fetch(actorPDA);
+            if (actorAccount) {
+              setIsActor(true);
+              setActorData(actorAccount);
+              return; // Si encontramos al actor, salimos.
+            }
+          } catch (e) {
+            // Silenciamos el error: es normal que no sea actor aún.
+            console.log("No es un actor registrado todavía.");
+          }
+
+          // 3. VERIFICAR SI TIENE SOLICITUD PENDIENTE
+          try {
+            const [requestPDA] = PublicKey.findProgramAddressSync(
+              [Buffer.from("request"), publicKey.toBuffer()],
+              program.programId
+            );
+            const requestAccount = await program.account.roleRequest.fetch(requestPDA);
+            if (requestAccount) {
+              setRequestPending(true);
+            }
+          } catch (e) {
+            // Silenciamos el error: es un usuario totalmente nuevo.
+            console.log("No tiene solicitudes pendientes.");
+            // IMPORTANTE: Aquí no hacemos nada, simplemente dejamos que el flujo siga
+            // para que al final se renderice el RoleSelection.
+          }
+
+        
+
+
+        } catch (e: any) {
+          // Solo marcamos como NO inicializado si el error es que la cuenta no existe
+          if (e.message.includes("Account does not exist")) {
+            setIsInitialized(false);
+          } else {
+            console.error("Error inesperado en checkStatus:", e);
+          }
         }
-      } catch (e) {
-        console.log("ℹ️ [CheckStatus] El contrato no parece estar inicializado.");        
-        setIsInitialized(false);
-      }
     };
     if (mounted && program && publicKey) checkStatus();
   }, [mounted, program, publicKey]);
@@ -168,6 +218,12 @@ export default function Dashboard() {
   // 3. SI EL USUARIO ES ADMIN: Mostrar Dashboard de Admin
   if (isAdmin) {
     return <AdminDashboardView program={program} />;
+  }
+
+  // Actor registrado 
+  if (isActor && actorData) {
+    const roleName = Object.keys(actorData.role)[0]; // Extrae "producer", "factory", etc.
+    return <ActorDashboardView role={roleName} />;
   }
 
   // 4. Si la solicitud de rol está pendiente (Para usuarios comunes)
