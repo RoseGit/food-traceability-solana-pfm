@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useWallet } from "@solana/wallet-adapter-react";
+import Link from 'next/link';
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
@@ -50,12 +51,11 @@ export default function Home() {
           </p>
 
           <div className="pt-8">
-            <button
-              onClick={() => alert("Próximamente: Redirigiendo al Dashboard...")}
-              className="px-10 py-4 bg-white text-black font-bold rounded-full hover:bg-green-500 hover:text-white transition-all transform hover:scale-105 shadow-lg shadow-green-500/20"
-            >
-              Go to Dashboard →
-            </button>
+            <Link href="/dashboard">
+              <button className="px-10 py-4 bg-white text-black font-bold rounded-full hover:bg-green-500 hover:text-white transition-all transform hover:scale-105 shadow-lg shadow-green-500/20">
+                Go to Dashboard →
+              </button>
+            </Link>
           </div>
         </div>
 
