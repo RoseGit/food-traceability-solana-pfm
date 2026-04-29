@@ -8,6 +8,82 @@
   },
   "instructions": [
     {
+      "name": "approve_actor",
+      "discriminator": [
+        52,
+        169,
+        14,
+        217,
+        98,
+        242,
+        219,
+        202
+      ],
+      "accounts": [
+        {
+          "name": "actor_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  99,
+                  116,
+                  111,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "role_request.user",
+                "account": "RoleRequest"
+              }
+            ]
+          }
+        },
+        {
+          "name": "role_request",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  113,
+                  117,
+                  101,
+                  115,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "role_request.user",
+                "account": "RoleRequest"
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "create_batch",
       "discriminator": [
         159,
@@ -344,42 +420,44 @@
       ]
     },
     {
-      "name": "register_actor",
+      "name": "request_role",
       "discriminator": [
-        113,
-        25,
-        196,
-        156,
-        92,
-        79,
-        15,
-        151
+        93,
+        225,
+        205,
+        233,
+        42,
+        66,
+        123,
+        138
       ],
       "accounts": [
         {
-          "name": "actor_account",
+          "name": "role_request",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  97,
-                  99,
-                  116,
-                  111,
-                  114
+                  114,
+                  101,
+                  113,
+                  117,
+                  101,
+                  115,
+                  116
                 ]
               },
               {
                 "kind": "account",
-                "path": "authority"
+                "path": "user"
               }
             ]
           }
         },
         {
-          "name": "authority",
+          "name": "user",
           "writable": true,
           "signer": true
         },
@@ -626,6 +704,19 @@
         149,
         140,
         63
+      ]
+    },
+    {
+      "name": "RoleRequest",
+      "discriminator": [
+        244,
+        149,
+        42,
+        215,
+        188,
+        161,
+        198,
+        119
       ]
     }
   ],
@@ -1132,6 +1223,63 @@
           {
             "name": "next_certificate_id",
             "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RequestStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Pending"
+          },
+          {
+            "name": "Approved"
+          },
+          {
+            "name": "Rejected"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RoleRequest",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "requested_role",
+            "type": {
+              "defined": {
+                "name": "ActorRole"
+              }
+            }
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "location",
+            "type": "string"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "RequestStatus"
+              }
+            }
           },
           {
             "name": "bump",

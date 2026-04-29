@@ -7,7 +7,7 @@ import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 
 export const SolanaProvider = ({ children }: { children: React.ReactNode }) => {
     // Usamos tu URL de ngrok como el endpoint principal
-    const endpoint = "https://elastic-reimburse-gainfully.ngrok-free.dev";
+    const endpoint = "http://127.0.0.1:8899";
 
     // Mantenemos wallets vacío para usar el Wallet Standard (Backpack)
     const wallets = useMemo(() => [], []);
