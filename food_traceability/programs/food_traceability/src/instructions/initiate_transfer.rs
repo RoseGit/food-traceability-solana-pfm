@@ -2,6 +2,11 @@ use crate::state::*;
 use anchor_lang::prelude::*;
 use crate::error::FoodTraceabilityError;
 
+/// Contexto para la instrucción `initiate_transfer`.
+/// 
+/// Esta estructura gestiona la creación de una solicitud de transferencia de custodia.
+/// Utiliza un sistema de seguridad de triple validación: autoridad sobre el lote, 
+/// existencia de perfiles de actor y lógica de negocio de la cadena de suministro.
 #[derive(Accounts)]
 #[instruction(quantity: u64, seed_nonce: u64)]
 pub struct InitiateTransfer<'info> {
@@ -19,7 +24,7 @@ pub struct InitiateTransfer<'info> {
     )]
     pub transfer_request: Account<'info, TransferRequest>,
 
-    // CAMBIO: Validamos contra 'authority' para permitir el flujo de trazabilidad
+    
     #[account(mut, constraint = batch.authority == authority.key() @ FoodTraceabilityError::Unauthorized)]
     pub batch: Account<'info, Batch>,
 
@@ -29,7 +34,7 @@ pub struct InitiateTransfer<'info> {
     #[account(seeds = [b"actor", recipient_wallet.key().as_ref()], bump = recipient_profile.bump)]
     pub recipient_profile: Account<'info, Actor>,
 
-    /// CHECK: Solo para obtener la llave del receptor
+    
     pub recipient_wallet: UncheckedAccount<'info>,
 
     #[account(mut)]
@@ -37,6 +42,19 @@ pub struct InitiateTransfer<'info> {
     pub system_program: Program<'info, System>,
 }
 
+/// Manejador para iniciar una transferencia de custodia entre actores.
+/// 
+/// La función ejecuta la "Matriz de Permisos" del sistema, asegurando que la trazabilidad 
+/// sea coherente con el mundo real.
+/// 
+/// # Lógica de Negocio:
+/// 1. **Validación de Inventario**: Comprueba que el lote tenga suficiente `quantity`.
+/// 2. **Matriz de Permisos**: Verifica que el flujo de roles sea legal:
+///    - `Producer` -> `Factory`
+///    - `Factory` -> `Retailer`
+///    - `Retailer` -> `Consumer`
+/// 3. **Estado Pendiente**: La transferencia se crea con estado `Pending`. La custodia 
+///    no cambia legalmente hasta que el receptor la acepta.
 pub fn handler(ctx: Context<InitiateTransfer>, quantity: u64, _seed_nonce: u64) -> Result<()> {
     // 1. Validar cantidad
     require!(

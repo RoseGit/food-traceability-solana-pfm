@@ -34,7 +34,6 @@ pub mod food_traceability {
     }
 
     // 2. Solicitud de Rol (Usuario/Actor)
-    // Cambiamos 'register_actor' por 'request_role'
     pub fn request_role(
         ctx: Context<RequestRole>,
         name: String,
@@ -45,14 +44,13 @@ pub mod food_traceability {
     }
 
     // 3. Aprobación de Actor (Solo el Admin)
-    // Nueva función para formalizar el registro
     pub fn approve_actor(ctx: Context<ApproveActor>) -> Result<()> {
         instructions::approve_actor::handler(ctx)
     }
 
     pub fn reject_role(ctx: Context<RejectRole>) -> Result<()> {
         let role_request = &mut ctx.accounts.role_request;
-        role_request.status = RequestStatus::Rejected; // Asegúrate de tener este estado en tu Enum
+        role_request.status = RequestStatus::Rejected;
 
         msg!("Solicitud rechazada para el usuario: {}", role_request.user);
         Ok(())
@@ -61,7 +59,7 @@ pub mod food_traceability {
     pub fn initiate_transfer(
         ctx: Context<InitiateTransfer>,
         quantity: u64,
-        seed_nonce: u64, // Nuevo parámetro para hacer la PDA única
+        seed_nonce: u64,
     ) -> Result<()> {
         crate::instructions::initiate_transfer::handler(ctx, quantity, seed_nonce)
     }
@@ -71,8 +69,6 @@ pub mod food_traceability {
     }
 
     pub fn reject_transfer(ctx: Context<RejectTransfer>) -> Result<()> {
-        // Similar a accept, pero solo cambia el estado a Rejected
-        // y no resta del batch original.
         crate::instructions::reject_transfer::handler(ctx)
     }
 
@@ -82,7 +78,7 @@ pub mod food_traceability {
         product: String,
         origin: String,
         quantity: u64,
-        parent_sources: Vec<Pubkey>, // <-- Añadir aquí
+        parent_sources: Vec<Pubkey>,
     ) -> Result<()> {
         crate::instructions::create_batch::handler(
             ctx,

@@ -105,7 +105,6 @@ pub struct Batch {
 }
 
 impl Batch {
-    // Ejemplo: Si antes tenías 200, súmale 32
     pub const SIZE: usize = 8 + 8 + 32 + 32 + (4 + 50) + (4 + 50) + 8; 
 }
 
@@ -180,7 +179,6 @@ impl ProgramConfig {
         + 1; // bump (u8)
 }
 
-impl Actor {
-    // Cálculo de espacio: 8 (discriminador) + 32 + (4 + 40) + 1 + (4 + 40) + 1 + 1 = 131
+impl Actor {    
     pub const SIZE: usize = 8 + 32 + 44 + 1 + 44 + 1 + 1;
 }

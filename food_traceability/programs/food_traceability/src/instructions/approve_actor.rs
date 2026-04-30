@@ -2,6 +2,10 @@
 use crate::state::*;
 use anchor_lang::prelude::*;
 
+/// Contexto para la instrucción `approve_actor`.
+///
+/// Esta estructura define el proceso de transición de una solicitud pendiente (`RoleRequest`)
+/// a un perfil de usuario activo (`Actor`) dentro del sistema de trazabilidad.
 #[derive(Accounts)]
 pub struct ApproveActor<'info> {
     // La cuenta del actor que se va a crear oficialmente
@@ -35,6 +39,15 @@ pub struct ApproveActor<'info> {
     pub system_program: Program<'info, System>,
 }
 
+/// Manejador para aprobar y registrar formalmente a un participante en la red.
+///
+/// Transfiere los datos verificados desde la solicitud (`RoleRequest`) hacia la nueva
+/// cuenta de estado permanente (`Actor`), activando sus permisos de operación.
+///
+/// # Pasos:
+/// 1. Mapea la dirección de la wallet, el nombre y el rol solicitado.
+/// 2. Establece el flag `is_active` en `true`.
+/// 3. Almacena el `bump` para futuras validaciones de la PDA.
 pub fn handler(ctx: Context<ApproveActor>) -> Result<()> {
     let actor = &mut ctx.accounts.actor_account;
     let request = &ctx.accounts.role_request;
