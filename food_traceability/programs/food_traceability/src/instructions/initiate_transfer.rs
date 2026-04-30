@@ -34,7 +34,8 @@ pub struct InitiateTransfer<'info> {
     #[account(seeds = [b"actor", recipient_wallet.key().as_ref()], bump = recipient_profile.bump)]
     pub recipient_profile: Account<'info, Actor>,
 
-    
+    /// CHECK: Esta cuenta no se lee ni se escribe, solo se usa para obtener su clave pública
+    /// y validarla contra el perfil del receptor. No requiere validaciones de tipo.
     pub recipient_wallet: UncheckedAccount<'info>,
 
     #[account(mut)]
