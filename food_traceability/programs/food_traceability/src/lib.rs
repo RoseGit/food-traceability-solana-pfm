@@ -8,17 +8,20 @@ use anchor_lang::prelude::*;
 
 // Importamos individualmente los módulos de instrucciones
 // Esto ayuda al macro #[program] a encontrar los structs sin ambigüedad
+use crate::error::FoodTraceabilityError;
+use crate::events::BatchCreated;
+use crate::instructions::accept_transfer::*;
 use crate::instructions::approve_actor::*;
 use crate::instructions::create_batch::*;
 use crate::instructions::initialize::*;
+use crate::instructions::initiate_transfer::*;
 use crate::instructions::issue_certificate::*;
 use crate::instructions::record_event::*;
+use crate::instructions::reject_transfer::*;
 use crate::instructions::request_role::*;
 use crate::instructions::revoke_certificate::*;
 use crate::instructions::update_status::*;
-
-use crate::error::FoodTraceabilityError;
-use crate::events::BatchCreated;
+use crate::state::*;
 
 declare_id!("Fw6zjywTLYyq7DLLQkiBGHgpKteCpgbamrHbXdiJdgCg");
 
@@ -45,6 +48,32 @@ pub mod food_traceability {
     // Nueva función para formalizar el registro
     pub fn approve_actor(ctx: Context<ApproveActor>) -> Result<()> {
         instructions::approve_actor::handler(ctx)
+    }
+
+    pub fn reject_role(ctx: Context<RejectRole>) -> Result<()> {
+        let role_request = &mut ctx.accounts.role_request;
+        role_request.status = RequestStatus::Rejected; // Asegúrate de tener este estado en tu Enum
+
+        msg!("Solicitud rechazada para el usuario: {}", role_request.user);
+        Ok(())
+    }
+
+    pub fn initiate_transfer(
+        ctx: Context<InitiateTransfer>,
+        quantity: u64,
+        seed_nonce: u64, // Nuevo parámetro para hacer la PDA única
+    ) -> Result<()> {
+        crate::instructions::initiate_transfer::handler(ctx, quantity, seed_nonce)
+    }
+
+    pub fn accept_transfer(ctx: Context<AcceptTransfer>) -> Result<()> {
+        crate::instructions::accept_transfer::handler(ctx)
+    }
+
+    pub fn reject_transfer(ctx: Context<RejectTransfer>) -> Result<()> {
+        // Similar a accept, pero solo cambia el estado a Rejected
+        // y no resta del batch original.
+        crate::instructions::reject_transfer::handler(ctx)
     }
 
     pub fn create_batch(

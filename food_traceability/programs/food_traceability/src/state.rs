@@ -1,5 +1,7 @@
 use anchor_lang::prelude::*;
 
+use crate::error::FoodTraceabilityError;
+
 // Definición de enums
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug, PartialEq)]
 pub enum BatchStatus {
@@ -11,16 +13,13 @@ pub enum BatchStatus {
     Delivered,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug, PartialEq)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug, PartialEq, Eq)]
 pub enum ActorRole {
-    Producer,
-    Processor,
-    Transporter,
-    Exporter,
-    Authority,
-    Auditor,
-    Distributor,
+    Producer,    
+    Factory, 
     Retailer,
+    Consumer,
+    Authority
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug, PartialEq)]
@@ -37,6 +36,23 @@ pub enum RequestStatus {
     Rejected,
 }
 
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
+pub enum TransferStatus {
+    Pending,
+    Accepted,
+    Rejected,
+}
+
+#[account]
+pub struct TransferRequest {
+    pub batch_id: u64,
+    pub from: Pubkey,      // Productor
+    pub to: Pubkey,        // Factory
+    pub quantity: u64,
+    pub status: TransferStatus,
+    pub bump: u8,
+}
+
 #[account]
 pub struct RoleRequest {
     pub user: Pubkey,              // Quién solicita
@@ -45,6 +61,26 @@ pub struct RoleRequest {
     pub location: String,
     pub status: RequestStatus, // Pendiente, Aprobado, Rechazado
     pub bump: u8,
+}
+
+impl TransferRequest {
+    pub const SIZE: usize = 8 + 8 + 32 + 32 + 8 + 1 + 1; // Discriminador + campos
+}
+
+#[derive(Accounts)]
+pub struct RejectRole<'info> {
+    #[account(
+        mut,
+        // Usamos el nombre exacto de tu enum de errores
+        constraint = config.authority == admin.key() @ FoodTraceabilityError::NotAdmin,
+        close = admin 
+    )]
+    pub role_request: Account<'info, RoleRequest>,
+
+    pub admin: Signer<'info>,
+
+    #[account(seeds = [b"config"], bump)]
+    pub config: Account<'info, ProgramConfig>,
 }
 
 impl RoleRequest {

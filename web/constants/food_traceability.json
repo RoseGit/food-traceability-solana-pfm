@@ -8,6 +8,37 @@
   },
   "instructions": [
     {
+      "name": "accept_transfer",
+      "discriminator": [
+        94,
+        249,
+        171,
+        62,
+        208,
+        120,
+        49,
+        110
+      ],
+      "accounts": [
+        {
+          "name": "transfer_request",
+          "writable": true
+        },
+        {
+          "name": "batch",
+          "writable": true
+        },
+        {
+          "name": "to",
+          "signer": true,
+          "relations": [
+            "transfer_request"
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "approve_actor",
       "discriminator": [
         52,
@@ -211,6 +242,122 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "initiate_transfer",
+      "discriminator": [
+        128,
+        229,
+        77,
+        5,
+        65,
+        234,
+        228,
+        75
+      ],
+      "accounts": [
+        {
+          "name": "transfer_request",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  114,
+                  97,
+                  110,
+                  115,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              },
+              {
+                "kind": "account",
+                "path": "batch"
+              },
+              {
+                "kind": "arg",
+                "path": "seed_nonce"
+              }
+            ]
+          }
+        },
+        {
+          "name": "batch",
+          "writable": true
+        },
+        {
+          "name": "sender_profile",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  99,
+                  116,
+                  111,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "recipient_profile",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  99,
+                  116,
+                  111,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "recipient_wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "recipient_wallet"
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "quantity",
+          "type": "u64"
+        },
+        {
+          "name": "seed_nonce",
+          "type": "u64"
+        }
+      ]
     },
     {
       "name": "issue_certificate",
@@ -418,6 +565,75 @@
           "type": "string"
         }
       ]
+    },
+    {
+      "name": "reject_role",
+      "discriminator": [
+        31,
+        246,
+        243,
+        158,
+        83,
+        3,
+        238,
+        59
+      ],
+      "accounts": [
+        {
+          "name": "role_request",
+          "writable": true
+        },
+        {
+          "name": "admin",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "reject_transfer",
+      "discriminator": [
+        250,
+        250,
+        180,
+        34,
+        151,
+        19,
+        110,
+        207
+      ],
+      "accounts": [
+        {
+          "name": "transfer_request",
+          "writable": true
+        },
+        {
+          "name": "to",
+          "signer": true,
+          "relations": [
+            "transfer_request"
+          ]
+        }
+      ],
+      "args": []
     },
     {
       "name": "request_role",
@@ -718,6 +934,19 @@
         198,
         119
       ]
+    },
+    {
+      "name": "TransferRequest",
+      "discriminator": [
+        200,
+        121,
+        88,
+        202,
+        12,
+        160,
+        237,
+        12
+      ]
     }
   ],
   "events": [
@@ -803,28 +1032,53 @@
   "errors": [
     {
       "code": 6000,
+      "name": "NotAdmin",
+      "msg": "No tienes permisos de administrador para realizar esta acción."
+    },
+    {
+      "code": 6001,
       "name": "CustomError",
       "msg": "Custom error message"
     },
     {
-      "code": 6001,
+      "code": 6002,
       "name": "OnlyProducersCanCreate",
       "msg": "Solo los usuarios con el rol de Productor pueden crear lotes."
     },
     {
-      "code": 6002,
+      "code": 6003,
       "name": "ProductTooLong",
       "msg": "El nombre del producto es demasiado largo."
     },
     {
-      "code": 6003,
+      "code": 6004,
       "name": "OriginTooLong",
       "msg": "El origen proporcionado es demasiado largo."
     },
     {
-      "code": 6004,
+      "code": 6005,
       "name": "OnlyAuthoritiesCanIssue",
       "msg": "Solo las cuentas con rol de Autoridad pueden emitir certificados."
+    },
+    {
+      "code": 6006,
+      "name": "InsufficientQuantity",
+      "msg": "No tienes suficiente cantidad en el lote para transferir."
+    },
+    {
+      "code": 6007,
+      "name": "NotAuthorizedRecipient",
+      "msg": "Solo el destinatario especificado puede aceptar esta transferencia."
+    },
+    {
+      "code": 6008,
+      "name": "InvalidTransferPath",
+      "msg": "La transferencia no está permitida entre estos roles según la matriz de permisos."
+    },
+    {
+      "code": 6009,
+      "name": "InvalidStatus",
+      "msg": "La transferencia ya no se encuentra en estado pendiente."
     }
   ],
   "types": [
@@ -905,25 +1159,16 @@
             "name": "Producer"
           },
           {
-            "name": "Processor"
-          },
-          {
-            "name": "Transporter"
-          },
-          {
-            "name": "Exporter"
-          },
-          {
-            "name": "Authority"
-          },
-          {
-            "name": "Auditor"
-          },
-          {
-            "name": "Distributor"
+            "name": "Factory"
           },
           {
             "name": "Retailer"
+          },
+          {
+            "name": "Consumer"
+          },
+          {
+            "name": "Authority"
           }
         ]
       }
@@ -1284,6 +1529,59 @@
           {
             "name": "bump",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TransferRequest",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "batch_id",
+            "type": "u64"
+          },
+          {
+            "name": "from",
+            "type": "pubkey"
+          },
+          {
+            "name": "to",
+            "type": "pubkey"
+          },
+          {
+            "name": "quantity",
+            "type": "u64"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "TransferStatus"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TransferStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Pending"
+          },
+          {
+            "name": "Accepted"
+          },
+          {
+            "name": "Rejected"
           }
         ]
       }

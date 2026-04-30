@@ -154,6 +154,7 @@ export default function Dashboard() {
 
       setStatus({ message: '¡Inicialización exitosa!', type: 'success' });
       setIsInitialized(true); 
+      setIsAdmin(true);
     } catch (error: any) {
       setStatus({ message: error.message, type: 'error' });
     } finally {
@@ -222,13 +223,17 @@ export default function Dashboard() {
 
   // Actor registrado 
   if (isActor && actorData) {
-    const roleName = Object.keys(actorData.role)[0]; // Extrae "producer", "factory", etc.
-    return <ActorDashboardView role={roleName} />;
+    const roleName = Object.keys(actorData.role)[0];
+    return <ActorDashboardView 
+            role={roleName} 
+            program={program} 
+            publicKey={publicKey} 
+         />;
   }
 
   // 4. Si la solicitud de rol está pendiente (Para usuarios comunes)
   if (requestPending) {
-    return <PendingRequest selectedRole={selectedRole} onBack={() => setRequestPending(false)} />;
+    return <PendingRequest selectedRole={selectedRole} onBack={() => router.push('/')} />;
   }
 
   // 5. Pantalla normal de selección de roles

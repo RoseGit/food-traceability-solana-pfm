@@ -72,6 +72,37 @@ export const AdminDashboardView = ({ program }: { program: any }) => {
     }
   };
 
+  const handleReject = async (requestPubKey: PublicKey) => {
+    if (!program || !publicKey) return;
+
+    try {
+      setLoading(true);
+      
+      const [configPDA] = PublicKey.findProgramAddressSync(
+        [Buffer.from("config")],
+        program.programId
+      );
+
+      // Llamada a la instrucción que acabas de crear en Rust
+      await program.methods
+        .rejectRole()
+        .accounts({
+          roleRequest: requestPubKey, // El nombre debe coincidir con el struct en Rust
+          admin: publicKey,
+          config: configPDA,
+        })
+        .rpc();
+
+      alert("Solicitud rechazada. La cuenta ha sido cerrada.");
+      fetchRequests(); // Actualiza la lista automáticamente
+    } catch (error: any) {
+      console.error("Error al rechazar:", error);
+      alert("Error: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0f1114] text-white font-sans p-8">
       <div className="max-w-6xl mx-auto">
@@ -110,17 +141,30 @@ export const AdminDashboardView = ({ program }: { program: any }) => {
                         {Object.keys(req.account.requestedRole)[0]}
                       </span>
                     </div>
-                    <button 
-                      disabled={loading}
-                      onClick={() => handleApprove(req.publicKey, req.account.user)}
-                      className="bg-green-500 hover:bg-green-400 text-black px-6 py-2 rounded-lg font-bold transition-colors disabled:opacity-50"
-                    >
-                      {loading ? "..." : "Aprobar"}
-                    </button>
+                    
+                    {/* Contenedor de acciones */}
+                    <div className="flex items-center gap-3">
+                      <button 
+                        disabled={loading}
+                        onClick={() => handleReject(req.publicKey)}
+                        className="text-red-500 hover:bg-red-500/10 px-4 py-2 rounded-lg font-bold transition-all disabled:opacity-50 border border-transparent hover:border-red-500/20"
+                      >
+                        {loading ? "..." : "Rechazar"}
+                      </button>
+
+                      <button 
+                        disabled={loading}
+                        onClick={() => handleApprove(req.publicKey, req.account.user)}
+                        className="bg-green-500 hover:bg-green-400 text-black px-6 py-2 rounded-lg font-bold transition-colors disabled:opacity-50"
+                      >
+                        {loading ? "..." : "Aprobar"}
+                      </button>
+                    </div>
                   </div>
                 ))
               )}
             </div>
+            
           </div>
 
           {/* CARD SECUNDARIA (EJEMPLO) */}

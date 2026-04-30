@@ -12,7 +12,7 @@ export const PendingRequest = ({ selectedRole, onBack }: PendingRequestProps) =>
       Espera la aprobación del Administrador.
     </p>
     <button onClick={onBack} className="mt-8 text-sm text-gray-500 hover:text-white">
-      Volver a la selección
+      Volver a inicio
     </button>
   </div>
 );
