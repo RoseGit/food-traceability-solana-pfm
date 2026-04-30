@@ -71,11 +71,13 @@ const openTransferForm = (token: any) => {
     ]);
 
     // 2. Filtrar solo las pendientes
-    const pending = incoming.filter((t: any) => t.account.status.pending !== undefined);
+    const filtered = role.toLowerCase() === 'retailer' 
+      ? incoming.filter((t: any) => t.account.status.pending !== undefined || t.account.status.accepted !== undefined)
+      : incoming.filter((t: any) => t.account.status.pending !== undefined);
 
     // 3. "Enriquecer" los datos buscando el nombre del producto en cada Batch
     const enrichedTransfers = await Promise.all(
-      pending.map(async (transfer: any) => {
+      filtered.map(async (transfer: any) => {
         try {
           // Calculamos la PDA del Batch para obtener su información
           const [batchPDA] = PublicKey.findProgramAddressSync(
@@ -605,7 +607,6 @@ useEffect(() => {
             <div className="flex items-center gap-4">
               <div className="text-3xl bg-[#0f1114] p-3 rounded-lg">📦</div>
               <div>
-                {/* Aquí mostramos el NOMBRE del producto obtenido del Batch */}
                 <h4 className="text-xl font-bold text-white capitalize">
                   {transfer.productName} 
                 </h4>
@@ -624,20 +625,53 @@ useEffect(() => {
             </div>
 
             <div className="flex gap-3 w-full md:w-auto">
-              <button 
-  disabled={loading}
-  onClick={() => handleRejectTransfer(transfer.publicKey)} // Pasamos la PDA de la transferencia
-  className="flex-1 md:flex-none px-6 py-2 rounded-xl font-bold border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
+              {/* Lógica condicional para Retailer con transferencia aceptada */}
+              {role.toLowerCase() === 'retailer' && transfer.account.status.accepted !== undefined ? (
+                <button 
+  onClick={async () => {
+    // 1. Calculamos la PDA del BATCH original a partir del batchId
+    // que viene dentro de la cuenta de transferencia
+    const [batchPDA] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("batch"),
+        transfer.account.batchId.toArrayLike(Buffer, "le", 8)
+      ],
+      program.programId
+    );
+
+    // 2. Ahora pasamos esa PDA al selectedToken
+    setSelectedToken({
+      publicKey: batchPDA, // <--- Ahora sí es la dirección de un Batch real
+      account: {
+        product: transfer.productName,
+        quantity: transfer.account.quantity
+      }
+    });
+    setView('transfer');
+  }}
+  className="flex-1 md:flex-none px-6 py-3 rounded-xl font-bold bg-green-600 text-white hover:bg-green-500 transition-all shadow-lg shadow-green-900/20"
 >
-  {loading ? "Procesando..." : "Rechazar"}
+  Transferir al cliente
 </button>
-              <button 
-  disabled={loading}
-  onClick={() => handleAcceptTransfer(transfer)} // Pasamos el objeto transfer completo
-  className="flex-1 md:flex-none px-6 py-2 rounded-xl font-bold bg-indigo-600 text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-900/20 disabled:opacity-50"
->
-  {loading ? "Procesando..." : "Aceptar"}
-</button>
+              ) : (
+                /* Botones estándar de Aceptar/Rechazar para transferencias pendientes */
+                <>
+                  <button 
+                    disabled={loading}
+                    onClick={() => handleRejectTransfer(transfer.publicKey)}
+                    className="flex-1 md:flex-none px-6 py-2 rounded-xl font-bold border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
+                  >
+                    {loading ? "Procesando..." : "Rechazar"}
+                  </button>
+                  <button 
+                    disabled={loading}
+                    onClick={() => handleAcceptTransfer(transfer)}
+                    className="flex-1 md:flex-none px-6 py-2 rounded-xl font-bold bg-indigo-600 text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-900/20 disabled:opacity-50"
+                  >
+                    {loading ? "Procesando..." : "Aceptar"}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         ))}
