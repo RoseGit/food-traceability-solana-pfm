@@ -9,7 +9,6 @@ pub struct InitiateTransfer<'info> {
         init, 
         payer = authority, 
         space = TransferRequest::SIZE, 
-        // Añadimos seed_nonce a las semillas
         seeds = [
             b"transfer", 
             authority.key().as_ref(), 
@@ -18,17 +17,15 @@ pub struct InitiateTransfer<'info> {
         ], 
         bump
     )]
-
     pub transfer_request: Account<'info, TransferRequest>,
 
-    #[account(mut, constraint = batch.creator == authority.key())]
+    // CAMBIO: Validamos contra 'authority' para permitir el flujo de trazabilidad
+    #[account(mut, constraint = batch.authority == authority.key() @ FoodTraceabilityError::Unauthorized)]
     pub batch: Account<'info, Batch>,
 
-    // Perfil del que ENVÍA (Sender)
     #[account(seeds = [b"actor", authority.key().as_ref()], bump = sender_profile.bump)]
     pub sender_profile: Account<'info, Actor>,
 
-    // Perfil del que RECIBE (Recipient)
     #[account(seeds = [b"actor", recipient_wallet.key().as_ref()], bump = recipient_profile.bump)]
     pub recipient_profile: Account<'info, Actor>,
 
@@ -41,7 +38,7 @@ pub struct InitiateTransfer<'info> {
 }
 
 pub fn handler(ctx: Context<InitiateTransfer>, quantity: u64, _seed_nonce: u64) -> Result<()> {
-    // 1. Validar que tiene cantidad suficiente
+    // 1. Validar cantidad
     require!(
         ctx.accounts.batch.quantity >= quantity,
         FoodTraceabilityError::InsufficientQuantity
@@ -50,7 +47,7 @@ pub fn handler(ctx: Context<InitiateTransfer>, quantity: u64, _seed_nonce: u64) 
     let sender_role = &ctx.accounts.sender_profile.role;
     let recipient_role = &ctx.accounts.recipient_profile.role;
     
-    // 2. Validación de la Matriz de Permisos (Impecable)
+    // 2. Matriz de Permisos
     let is_valid = match (sender_role, recipient_role) {
         (ActorRole::Producer, ActorRole::Factory) => true,
         (ActorRole::Factory, ActorRole::Retailer) => true,
@@ -69,10 +66,5 @@ pub fn handler(ctx: Context<InitiateTransfer>, quantity: u64, _seed_nonce: u64) 
     transfer.status = TransferStatus::Pending;
     transfer.bump = ctx.bumps.transfer_request;
 
-    msg!(
-        "Transferencia de {} unidades iniciada hacia {}",
-        quantity,
-        ctx.accounts.recipient_wallet.key()
-    );
     Ok(())
 }

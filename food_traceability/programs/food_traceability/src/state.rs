@@ -92,6 +92,7 @@ impl RoleRequest {
 pub struct Batch {
     pub id: u64,                // ID único del lote
     pub creator: Pubkey,        // Productor que creó el lote
+    pub authority: Pubkey,
     pub product: String,        // "Café Arábica", "Cacao", etc. (max 64 chars)
     pub origin: String,         // Finca/ubicación de origen (max 128 chars)
     pub quantity: u64,          // Cantidad en kg o unidades    
@@ -104,18 +105,8 @@ pub struct Batch {
 }
 
 impl Batch {
-    pub const SIZE: usize = 8  // Discriminator de Anchor
-        + 8                    // id (u64)
-        + 32                   // creator (Pubkey)
-        + (4 + 64)             // product (String max 64)
-        + (4 + 128)            // origin (String max 128)
-        + 8                    // quantity (u64)
-        + 8                    // date_created (i64)
-        + 1                    // status (Enum BatchStatus - asumiendo que es simple)
-        + 4                    // event_count (u32)
-        + 4                    // certificate_count (u32)
-        + 1                    // bump (u8)
-        + (4 + (32 * 10));     // parent_sources (Vec con max 10 fuentes)
+    // Ejemplo: Si antes tenías 200, súmale 32
+    pub const SIZE: usize = 8 + 8 + 32 + 32 + (4 + 50) + (4 + 50) + 8; 
 }
 
 // Evento del lote

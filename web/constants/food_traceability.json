@@ -29,11 +29,9 @@
           "writable": true
         },
         {
-          "name": "to",
-          "signer": true,
-          "relations": [
-            "transfer_request"
-          ]
+          "name": "authority",
+          "writable": true,
+          "signer": true
         }
       ],
       "args": []
@@ -1085,6 +1083,11 @@
       "code": 6009,
       "name": "InvalidStatus",
       "msg": "La transferencia ya no se encuentra en estado pendiente."
+    },
+    {
+      "code": 6010,
+      "name": "Unauthorized",
+      "msg": "No autorizado."
     }
   ],
   "types": [
@@ -1190,6 +1193,10 @@
           },
           {
             "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "authority",
             "type": "pubkey"
           },
           {

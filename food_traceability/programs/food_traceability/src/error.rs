@@ -22,4 +22,6 @@ pub enum FoodTraceabilityError {
     InvalidTransferPath,
     #[msg("La transferencia ya no se encuentra en estado pendiente.")]
     InvalidStatus,
+    #[msg("No autorizado.")]
+    Unauthorized,
 }

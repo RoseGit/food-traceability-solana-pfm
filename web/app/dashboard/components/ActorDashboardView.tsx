@@ -12,6 +12,9 @@ export const ActorDashboardView = ({
   program: any, 
   publicKey: PublicKey | null 
 }) => {
+
+  console.log("Rol actual recibido:", role);
+
   // Estados de navegación y datos
   const [view, setView] = useState<'menu' | 'create' | 'list' | 'transfer' | 'incoming'>('menu');
   const [pendingTransfers, setPendingTransfers] = useState<any[]>([]);  
@@ -71,9 +74,9 @@ const openTransferForm = (token: any) => {
     ]);
 
     // 2. Filtrar solo las pendientes
-    const filtered = role.toLowerCase() === 'retailer' 
-      ? incoming.filter((t: any) => t.account.status.pending !== undefined || t.account.status.accepted !== undefined)
-      : incoming.filter((t: any) => t.account.status.pending !== undefined);
+    const filtered = (role.toLowerCase() === 'retailer' || role.toLowerCase() === 'consumer')
+        ? incoming.filter((t: any) => t.account.status.pending !== undefined || t.account.status.accepted !== undefined)
+        : incoming.filter((t: any) => t.account.status.pending !== undefined);
 
     // 3. "Enriquecer" los datos buscando el nombre del producto en cada Batch
     const enrichedTransfers = await Promise.all(
@@ -373,36 +376,40 @@ useEffect(() => {
 
 
 
-        {view === 'menu' && (
-  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-    {/* Ocultar 'Crear token' para Retailer */}
-    {role.toLowerCase() !== 'retailer' && (
-      <div onClick={() => setView('create')} className="bg-[#161b22] border border-gray-800 rounded-2xl p-8 hover:border-blue-500/50 transition-all group cursor-pointer">
-        <div className="text-4xl mb-4">🪙</div>
-        <h3 className="text-2xl font-bold mb-3 text-blue-500">Crear un token</h3>
-        <p className="text-gray-400">Registra un nuevo lote de producto.</p>
-      </div>
-    )}
+{view === 'menu' && (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Ocultar 'Crear token' para Retailer y Customer */}
+            {role.toLowerCase() !== 'retailer' && role.toLowerCase() !== 'consumer' && (
+              <div onClick={() => setView('create')} className="bg-[#161b22] border border-gray-800 rounded-2xl p-8 hover:border-blue-500/50 transition-all group cursor-pointer">
+                <div className="text-4xl mb-4">🪙</div>
+                <h3 className="text-2xl font-bold mb-3 text-blue-500">Crear un token</h3>
+                <p className="text-gray-400">Registra un nuevo lote de producto.</p>
+              </div>
+            )}
 
-    {/* Ocultar 'Ver mis tokens' para Retailer */}
-    {role.toLowerCase() !== 'retailer' && (
-      <div onClick={() => setView('list')} className="bg-[#161b22] border border-gray-800 rounded-2xl p-8 hover:border-blue-500/50 transition-all group cursor-pointer">
-        <div className="text-4xl mb-4">🔍</div>
-        <h3 className="text-2xl font-bold mb-3 text-blue-500">Ver mis tokens</h3>
-        <p className="text-gray-400">Consulta tus activos actuales.</p>
-      </div>
-    )}
+            {/* Ocultar 'Ver mis tokens' para Retailer y Customer */}
+            {role.toLowerCase() !== 'retailer' && role.toLowerCase() !== 'consumer' && (
+              <div onClick={() => setView('list')} className="bg-[#161b22] border border-gray-800 rounded-2xl p-8 hover:border-blue-500/50 transition-all group cursor-pointer">
+                <div className="text-4xl mb-4">🔍</div>
+                <h3 className="text-2xl font-bold mb-3 text-blue-500">Ver mis tokens</h3>
+                <p className="text-gray-400">Consulta tus activos actuales.</p>
+              </div>
+            )}
 
-    {/* Única opción visible para Retailer (y visible para los demás excepto Producer) */}
-    {role.toLowerCase() !== 'producer' && (
-      <div onClick={() => setView('incoming')} className="bg-[#161b22] border border-indigo-800/30 rounded-2xl p-8 hover:border-indigo-500/50 transition-all group cursor-pointer">
-        <div className="text-4xl mb-4">📦</div>
-        <h3 className="text-2xl font-bold mb-3 text-indigo-400">Transferencias</h3>
-        <p className="text-gray-400">Gestiona los productos recibidos y enviados.</p>
-      </div>
-    )}
-  </div>
-)}
+            {/* Visible para Retailer, Customer y Factory (Todo excepto Producer) */}
+            {role.toLowerCase() !== 'producer' && (
+              <div onClick={() => setView('incoming')} className="bg-[#161b22] border border-indigo-800/30 rounded-2xl p-8 hover:border-indigo-500/50 transition-all group cursor-pointer">
+                <div className="text-4xl mb-4">📦</div>
+                <h3 className="text-2xl font-bold mb-3 text-indigo-400">Transferencias</h3>
+                <p className="text-gray-400">
+                  {role.toLowerCase() === 'customer' 
+                    ? "Consulta tus productos comprados." 
+                    : "Gestiona los productos recibidos y enviados."}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {view === 'create' && (
   <div className="max-w-2xl mx-auto bg-[#161b22] border border-gray-800 rounded-2xl p-8">
@@ -602,79 +609,89 @@ useEffect(() => {
       </div>
     ) : (
       <div className="grid gap-4">
-        {pendingTransfers.map((transfer) => (
-          <div key={transfer.publicKey.toBase58()} className="bg-[#161b22] border border-gray-800 p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <div className="text-3xl bg-[#0f1114] p-3 rounded-lg">📦</div>
-              <div>
-                <h4 className="text-xl font-bold text-white capitalize">
-                  {transfer.productName} 
-                </h4>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
-                  <p className="text-sm text-gray-400">
-                    Lote: <span className="font-mono text-blue-400">#{transfer.account.batchId.toString()}</span>
-                  </p>
-                  <p className="text-sm text-gray-400">
-                    Origen: <span className="font-mono text-xs">{transfer.account.from.toBase58().slice(0,8)}...</span>
-                  </p>
-                  <p className="text-sm text-gray-400">
-                    Cantidad: <span className="text-green-400 font-bold">{transfer.account.quantity.toString()}</span>
-                  </p>
+        {pendingTransfers.map((transfer) => {
+          // Variables auxiliares para limpiar la lógica visual
+          const isAccepted = transfer.account.status.accepted !== undefined;
+          const userRole = role.toLowerCase();
+          const isCustomer = userRole === 'customer' || userRole === 'client' || userRole === 'user'; // Ajusta según tu console.log
+          const isRetailer = userRole === 'retailer';
+
+          return (
+            <div key={transfer.publicKey.toBase58()} className="bg-[#161b22] border border-gray-800 p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="text-3xl bg-[#0f1114] p-3 rounded-lg">📦</div>
+                <div>
+                  <h4 className="text-xl font-bold text-white capitalize">
+                    {transfer.productName} 
+                  </h4>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                    <p className="text-sm text-gray-400">
+                      Lote: <span className="font-mono text-blue-400">#{transfer.account.batchId.toString().slice(-6)}</span>
+                    </p>
+                    <p className="text-sm text-gray-400">
+                      Cantidad: <span className="text-green-400 font-bold">{transfer.account.quantity.toString()}</span>
+                    </p>
+                    {isAccepted && (
+                      <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-bold uppercase">
+                        ✓ En posesión
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="flex gap-3 w-full md:w-auto">
-              {/* Lógica condicional para Retailer con transferencia aceptada */}
-              {role.toLowerCase() === 'retailer' && transfer.account.status.accepted !== undefined ? (
-                <button 
-  onClick={async () => {
-    // 1. Calculamos la PDA del BATCH original a partir del batchId
-    // que viene dentro de la cuenta de transferencia
-    const [batchPDA] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from("batch"),
-        transfer.account.batchId.toArrayLike(Buffer, "le", 8)
-      ],
-      program.programId
-    );
-
-    // 2. Ahora pasamos esa PDA al selectedToken
-    setSelectedToken({
-      publicKey: batchPDA, // <--- Ahora sí es la dirección de un Batch real
-      account: {
-        product: transfer.productName,
-        quantity: transfer.account.quantity
-      }
-    });
-    setView('transfer');
-  }}
-  className="flex-1 md:flex-none px-6 py-3 rounded-xl font-bold bg-green-600 text-white hover:bg-green-500 transition-all shadow-lg shadow-green-900/20"
->
-  Transferir al cliente
-</button>
-              ) : (
-                /* Botones estándar de Aceptar/Rechazar para transferencias pendientes */
-                <>
-                  <button 
-                    disabled={loading}
-                    onClick={() => handleRejectTransfer(transfer.publicKey)}
-                    className="flex-1 md:flex-none px-6 py-2 rounded-xl font-bold border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
-                  >
-                    {loading ? "Procesando..." : "Rechazar"}
-                  </button>
-                  <button 
-                    disabled={loading}
-                    onClick={() => handleAcceptTransfer(transfer)}
-                    className="flex-1 md:flex-none px-6 py-2 rounded-xl font-bold bg-indigo-600 text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-900/20 disabled:opacity-50"
-                  >
-                    {loading ? "Procesando..." : "Aceptar"}
-                  </button>
-                </>
-              )}
+              <div className="flex gap-3 w-full md:w-auto">
+                {/* 1. CASO: PRODUCTO YA ACEPTADO */}
+                {isAccepted ? (
+                  <>
+                    {isRetailer ? (
+                      /* Si es Retailer, puede transferir al cliente */
+                      <button 
+                        onClick={async () => {
+                          const [batchPDA] = PublicKey.findProgramAddressSync(
+                            [Buffer.from("batch"), transfer.account.batchId.toArrayLike(Buffer, "le", 8)],
+                            program.programId
+                          );
+                          setSelectedToken({
+                            publicKey: batchPDA,
+                            account: { product: transfer.productName, quantity: transfer.account.quantity }
+                          });
+                          setView('transfer');
+                        }}
+                        className="flex-1 md:flex-none px-6 py-3 rounded-xl font-bold bg-green-600 text-white hover:bg-green-500 transition-all shadow-lg shadow-green-900/20"
+                      >
+                        Transferir al cliente
+                      </button>
+                    ) : isCustomer ? (
+                      /* Si es Customer y ya aceptó, ocultamos botones y mostramos info */
+                      <div className="text-green-400 font-bold flex items-center px-4 py-2 border border-green-500/20 rounded-xl bg-green-500/5">
+                         Confirmado
+                      </div>
+                    ) : null}
+                  </>
+                ) : (
+                  /* 2. CASO: PRODUCTO PENDIENTE (Botones para todos los roles) */
+                  <>
+                    <button 
+                      disabled={loading}
+                      onClick={() => handleRejectTransfer(transfer.publicKey)}
+                      className="flex-1 md:flex-none px-6 py-2 rounded-xl font-bold border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
+                    >
+                      {loading ? "..." : "Rechazar"}
+                    </button>
+                    <button 
+                      disabled={loading}
+                      onClick={() => handleAcceptTransfer(transfer)}
+                      className="flex-1 md:flex-none px-6 py-2 rounded-xl font-bold bg-indigo-600 text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-900/20 disabled:opacity-50"
+                    >
+                      {loading ? "..." : "Aceptar"}
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     )}
   </div>
