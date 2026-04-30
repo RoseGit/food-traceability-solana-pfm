@@ -196,6 +196,12 @@
         {
           "name": "quantity",
           "type": "u64"
+        },
+        {
+          "name": "parent_sources",
+          "type": {
+            "vec": "pubkey"
+          }
         }
       ]
     },
@@ -1042,8 +1048,8 @@
     },
     {
       "code": 6002,
-      "name": "OnlyProducersCanCreate",
-      "msg": "Solo los usuarios con el rol de Productor pueden crear lotes."
+      "name": "OnlyAuthorizedRolesCanCreate",
+      "msg": "Solo los usuarios con el rol autorizados pueden crear lotes."
     },
     {
       "code": 6003,
@@ -1221,6 +1227,12 @@
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "parent_sources",
+            "type": {
+              "vec": "pubkey"
+            }
           }
         ]
       }

@@ -6,8 +6,8 @@ pub enum FoodTraceabilityError {
     NotAdmin,
     #[msg("Custom error message")]
     CustomError,
-    #[msg("Solo los usuarios con el rol de Productor pueden crear lotes.")]
-    OnlyProducersCanCreate,
+    #[msg("Solo los usuarios con el rol autorizados pueden crear lotes.")]
+    OnlyAuthorizedRolesCanCreate,
     #[msg("El nombre del producto es demasiado largo.")]
     ProductTooLong,
     #[msg("El origen proporcionado es demasiado largo.")]

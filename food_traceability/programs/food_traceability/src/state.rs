@@ -94,26 +94,28 @@ pub struct Batch {
     pub creator: Pubkey,        // Productor que creó el lote
     pub product: String,        // "Café Arábica", "Cacao", etc. (max 64 chars)
     pub origin: String,         // Finca/ubicación de origen (max 128 chars)
-    pub quantity: u64,          // Cantidad en kg o unidades
+    pub quantity: u64,          // Cantidad en kg o unidades    
     pub date_created: i64,      // Timestamp Unix
     pub status: BatchStatus,    // Estado actual
     pub event_count: u32,       // Número de eventos registrados
     pub certificate_count: u32, // Número de certificados
     pub bump: u8,               // Bump para PDA derivation
+    pub parent_sources: Vec<Pubkey>,
 }
 
 impl Batch {
-    pub const SIZE: usize = 8  // Discriminator
+    pub const SIZE: usize = 8  // Discriminator de Anchor
         + 8                    // id (u64)
         + 32                   // creator (Pubkey)
         + (4 + 64)             // product (String max 64)
         + (4 + 128)            // origin (String max 128)
         + 8                    // quantity (u64)
         + 8                    // date_created (i64)
-        + 1                    // status (Enum BatchStatus ocupa 1 byte)
+        + 1                    // status (Enum BatchStatus - asumiendo que es simple)
         + 4                    // event_count (u32)
         + 4                    // certificate_count (u32)
-        + 1; // bump (u8)
+        + 1                    // bump (u8)
+        + (4 + (32 * 10));     // parent_sources (Vec con max 10 fuentes)
 }
 
 // Evento del lote

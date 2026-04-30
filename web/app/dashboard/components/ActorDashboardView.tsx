@@ -17,6 +17,9 @@ export const ActorDashboardView = ({
   const [pendingTransfers, setPendingTransfers] = useState<any[]>([]);  
   const [loading, setLoading] = useState(false);
   const [tokens, setTokens] = useState<any[]>([]);
+  const [acceptedTransfers, setAcceptedTransfers] = useState<any[]>([]);
+  const [selectedSources, setSelectedSources] = useState<string[]>([]); // Guardará las PKs de las transferencias
+
   // 1. Añade estos estados nuevos dentro de ActorDashboardView
     const [selectedToken, setSelectedToken] = useState<any>(null);
     const [transferData, setTransferData] = useState({ toAddress: '', amount: '' });
@@ -120,43 +123,60 @@ useEffect(() => {
   }, [view]);
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!program || !publicKey) return;
+  e.preventDefault();
+  if (!program || !publicKey) return;
 
-    setLoading(true);
-    try {
-      const batchId = new anchor.BN(Date.now());
-      const quantityBN = new anchor.BN(formData.quantity);
+  setLoading(true);
+  try {
+    const batchId = new anchor.BN(Date.now());
+    const quantityBN = new anchor.BN(formData.quantity);
 
-      const [batchPDA] = PublicKey.findProgramAddressSync(
-        [Buffer.from("batch"), batchId.toArrayLike(Buffer, "le", 8)],
-        program.programId
-      );
+    // 1. Calculamos la PDA para el nuevo lote (Batch)
+    const [batchPDA] = PublicKey.findProgramAddressSync(
+      [Buffer.from("batch"), batchId.toArrayLike(Buffer, "le", 8)],
+      program.programId
+    );
 
-      await program.methods
-        .createBatch(
-          batchId,
-          formData.name,
-          "Origen Local",
-          quantityBN
-        )
-        .accounts({
-          batch: batchPDA,
-          authority: publicKey,
-        })
-        .rpc();
+    const [actorProfilePDA] = PublicKey.findProgramAddressSync(
+      [Buffer.from("actor"), publicKey.toBuffer()],
+      program.programId
+    );
 
-      // REDIRECCIÓN AUTOMÁTICA
-      setFormData({ name: '', quantity: '' });
-      setView('list'); // Cambiamos a la vista de "Ver mis tokens"
-      
-    } catch (error: any) {
-      console.error("Error:", error);
-      alert("Error en la transacción: " + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    // 2. Preparamos el array de fuentes (parent_sources)
+    // Si el usuario seleccionó fuentes, las convertimos. Si no, enviamos array vacío.
+    const parentSources = selectedSources.map(s => new PublicKey(s));
+
+    // 3. Llamada al método actualizado en el Smart Contract
+    await program.methods
+      .createBatch(
+        batchId,
+        formData.name,
+        role.toLowerCase() === 'producer' ? "Origen Local" : "Procesado en Factory",
+        quantityBN,
+        parentSources // <-- Pasamos el nuevo parámetro aquí
+      )
+      .accounts({
+        batch: batchPDA,
+        actorProfile: actorProfilePDA,
+        authority: publicKey,
+        // Nota: systemProgram y otros suelen resolverse solos en versiones modernas de Anchor,
+        // pero puedes agregarlos si tu versión lo requiere.
+      })
+      .rpc();
+
+    // 4. Limpieza y éxito
+    alert(`Lote creado con éxito. Insumos vinculados: ${parentSources.length}`);
+    setFormData({ name: '', quantity: '' });
+    setSelectedSources([]); // Limpiamos la selección
+    setView('list'); 
+    
+  } catch (error: any) {
+    console.error("Error al crear lote:", error);
+    alert("Error en la transacción: " + error.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // 3. Función para enviar la transferencia a la blockchain
   const handleTransferSubmit = async (e: React.FormEvent) => {
@@ -281,6 +301,60 @@ const handleRejectTransfer = async (transferPDA: PublicKey) => {
   }
 };
 
+const fetchAcceptedTransfers = async () => {
+  if (!program || !publicKey) return;
+  try {
+    setLoading(true);
+    // 1. Buscamos las transferencias donde yo soy el destinatario
+    const incoming = await program.account.transferRequest.all([
+      {
+        memcmp: {
+          offset: 8 + 8 + 32, // Campo 'to'
+          bytes: publicKey.toBase58(),
+        },
+      },
+    ]);
+
+    // 2. Filtramos solo las que ya fueron ACEPTADAS
+    const accepted = incoming.filter((t: any) => t.account.status.accepted !== undefined);
+
+    // 3. Buscamos el nombre del producto en el Batch original de cada transferencia
+    const enriched = await Promise.all(
+      accepted.map(async (transfer: any) => {
+        try {
+          const [batchPDA] = anchor.web3.PublicKey.findProgramAddressSync(
+            [
+              Buffer.from("batch"),
+              transfer.account.batchId.toArrayLike(Buffer, "le", 8)
+            ],
+            program.programId
+          );
+          const batchData = await program.account.batch.fetch(batchPDA);
+          return {
+            ...transfer,
+            productName: batchData.product // Guardamos el nombre real
+          };
+        } catch (err) {
+          return { ...transfer, productName: "Lote Desconocido" };
+        }
+      })
+    );
+
+    setAcceptedTransfers(enriched);
+  } catch (error) {
+    console.error("Error al obtener insumos:", error);
+  } finally {
+    setLoading(false);
+  }
+};
+
+// Llamar a esta función cuando el Factory entre a 'create'
+useEffect(() => {
+  if (view === 'create' && role.toLowerCase() === 'factory') {
+    fetchAcceptedTransfers();
+  }
+}, [view]);
+
 
   return (
     <div className="min-h-screen bg-[#0f1114] text-white font-sans p-8">
@@ -295,50 +369,121 @@ const handleRejectTransfer = async (transferPDA: PublicKey) => {
           <WalletMultiButton />
         </header>
 
+
+
         {view === 'menu' && (
   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-    {/* Opción Crear (Generalmente para Producer) */}
-    <div onClick={() => setView('create')} className="bg-[#161b22] border border-gray-800 rounded-2xl p-8 hover:border-blue-500/50 transition-all group cursor-pointer">
-      <div className="text-4xl mb-4">🪙</div>
-      <h3 className="text-2xl font-bold mb-3 text-blue-500">Crear un token</h3>
-      <p className="text-gray-400">Registra un nuevo lote de producto.</p>
-    </div>
+    {/* Ocultar 'Crear token' para Retailer */}
+    {role.toLowerCase() !== 'retailer' && (
+      <div onClick={() => setView('create')} className="bg-[#161b22] border border-gray-800 rounded-2xl p-8 hover:border-blue-500/50 transition-all group cursor-pointer">
+        <div className="text-4xl mb-4">🪙</div>
+        <h3 className="text-2xl font-bold mb-3 text-blue-500">Crear un token</h3>
+        <p className="text-gray-400">Registra un nuevo lote de producto.</p>
+      </div>
+    )}
 
-    {/* Ver mis tokens */}
-    <div onClick={() => setView('list')} className="bg-[#161b22] border border-gray-800 rounded-2xl p-8 hover:border-blue-500/50 transition-all group cursor-pointer">
-      <div className="text-4xl mb-4">🔍</div>
-      <h3 className="text-2xl font-bold mb-3 text-blue-500">Ver mis tokens</h3>
-      <p className="text-gray-400">Consulta tus activos actuales.</p>
-    </div>
+    {/* Ocultar 'Ver mis tokens' para Retailer */}
+    {role.toLowerCase() !== 'retailer' && (
+      <div onClick={() => setView('list')} className="bg-[#161b22] border border-gray-800 rounded-2xl p-8 hover:border-blue-500/50 transition-all group cursor-pointer">
+        <div className="text-4xl mb-4">🔍</div>
+        <h3 className="text-2xl font-bold mb-3 text-blue-500">Ver mis tokens</h3>
+        <p className="text-gray-400">Consulta tus activos actuales.</p>
+      </div>
+    )}
 
-    {/* NUEVA OPCIÓN: Transferencias (Solo para no-Producers) */}
+    {/* Única opción visible para Retailer (y visible para los demás excepto Producer) */}
     {role.toLowerCase() !== 'producer' && (
-      <div onClick={() => setView('incoming')} className="bg-[#161b22] border border-indigo-800/30 rounded-2xl p-8 hover:border-indigo-500/50 transition-all group cursor-pointer relative">
+      <div onClick={() => setView('incoming')} className="bg-[#161b22] border border-indigo-800/30 rounded-2xl p-8 hover:border-indigo-500/50 transition-all group cursor-pointer">
         <div className="text-4xl mb-4">📦</div>
         <h3 className="text-2xl font-bold mb-3 text-indigo-400">Transferencias</h3>
-        <p className="text-gray-400">Acepta o rechaza productos enviados hacia ti.</p>
-        {/* Badge opcional de "Pendiente" */}
-        <span className="absolute top-4 right-4 bg-indigo-500 text-[10px] px-2 py-1 rounded-full animate-pulse">
-          Acción requerida
-        </span>
+        <p className="text-gray-400">Gestiona los productos recibidos y enviados.</p>
       </div>
     )}
   </div>
 )}
 
         {view === 'create' && (
-          <div className="max-w-md mx-auto bg-[#161b22] border border-gray-800 rounded-2xl p-8">
-            <h3 className="text-2xl font-bold mb-6 text-blue-500">Nuevo Lote</h3>
-            <form onSubmit={handleCreateSubmit} className="space-y-6">
-              <input required className="w-full bg-[#0f1114] border border-gray-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none" placeholder="Nombre del producto" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
-              <input required type="number" className="w-full bg-[#0f1114] border border-gray-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none" placeholder="Cantidad" value={formData.quantity} onChange={(e) => setFormData({...formData, quantity: e.target.value})} />
-              <div className="flex gap-4">
-                <button type="button" onClick={() => setView('menu')} className="flex-1 px-4 py-3 border border-gray-700 text-gray-400 rounded-xl">Cancelar</button>
-                <button type="submit" disabled={loading} className="flex-1 px-4 py-3 bg-blue-600 text-white font-bold rounded-xl disabled:opacity-50">{loading ? "Firmando..." : "Crear"}</button>
-              </div>
-            </form>
+  <div className="max-w-2xl mx-auto bg-[#161b22] border border-gray-800 rounded-2xl p-8">
+    <h3 className="text-2xl font-bold mb-6 text-blue-500">Nuevo Lote de Producción </h3>
+    
+    <form onSubmit={handleCreateSubmit} className="space-y-6">
+      {/* Campos básicos */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <input required className="bg-[#0f1114] border border-gray-700 rounded-xl p-3 text-white outline-none" placeholder="Nombre del producto final (ej: Salsa)" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+        <input required type="number" className="bg-[#0f1114] border border-gray-700 rounded-xl p-3 text-white outline-none" placeholder="Cantidad producida" value={formData.quantity} onChange={(e) => setFormData({...formData, quantity: e.target.value})} />
+      </div>
+
+      {/* SECCIÓN DE SOURCE TOKENS */}
+      <div className="border-t border-gray-800 pt-6">
+        <label className="block text-sm font-bold text-gray-400 mb-4 uppercase tracking-wider">
+          Seleccionar Insumos (Source Tokens)
+        </label>
+        
+        {acceptedTransfers.length === 0 ? (
+          <p className="text-gray-500 text-sm italic bg-[#0f1114] p-4 rounded-xl border border-dashed border-gray-700">
+            No tienes transferencias aceptadas disponibles como insumos.
+          </p>
+        ) : (
+          <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+  {acceptedTransfers.map((transfer) => (
+    <div 
+      key={transfer.publicKey.toBase58()}
+      onClick={() => {
+        const pk = transfer.publicKey.toBase58();
+        setSelectedSources(prev => 
+          prev.includes(pk) ? prev.filter(i => i !== pk) : [...prev, pk]
+        );
+      }}
+      className={`p-4 rounded-xl border transition-all flex justify-between items-center ${
+        selectedSources.includes(transfer.publicKey.toBase58())
+        ? 'border-blue-500 bg-blue-500/10 shadow-[0_0_15px_rgba(59,130,246,0.1)]'
+        : 'border-gray-800 bg-[#0f1114] hover:border-gray-600'
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <div className={`text-xl ${selectedSources.includes(transfer.publicKey.toBase58()) ? 'opacity-100' : 'opacity-40'}`}>
+          📦
+        </div>
+        <div>
+          {/* Mostramos el nombre enriquecido */}
+          <p className="font-bold text-white text-sm capitalize">
+            {transfer.productName}
+          </p>
+          <div className="flex gap-3 mt-0.5">
+            <p className="text-[10px] text-gray-500 font-mono">
+              ID: #{transfer.account.batchId.toString().slice(-6)}
+            </p>
+            <p className="text-[10px] text-blue-400 font-bold uppercase">
+              Disponible: {transfer.account.quantity.toString()} unidades
+            </p>
           </div>
+        </div>
+      </div>
+      
+      <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+        selectedSources.includes(transfer.publicKey.toBase58())
+        ? 'bg-blue-500 border-blue-500'
+        : 'border-gray-600'
+      }`}>
+        {selectedSources.includes(transfer.publicKey.toBase58()) && (
+          <span className="text-white text-xs">✓</span>
         )}
+      </div>
+    </div>
+  ))}
+</div>
+        )}
+      </div>
+
+      <div className="flex gap-4 pt-4">
+        <button type="button" onClick={() => setView('menu')} className="flex-1 px-4 py-3 border border-gray-700 text-gray-400 rounded-xl">Cancelar</button>
+        <button type="submit" disabled={loading || (role.toLowerCase() === 'factory' && selectedSources.length === 0)} className="flex-1 px-4 py-3 bg-blue-600 text-white font-bold rounded-xl disabled:opacity-50">
+          {loading ? "Procesando..." : "Crear Token"}
+        </button>
+      </div>
+    </form>
+  </div>
+)}
 
         {view === 'list' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -431,7 +576,7 @@ const handleRejectTransfer = async (transferPDA: PublicKey) => {
             disabled={loading}
             className="flex-1 px-4 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 disabled:opacity-50"
           >
-            {loading ? "Procesando..." : "Enviar a Factory"}
+            {loading ? "Procesando..." : "Enviar"}
           </button>
         </div>
       </form>

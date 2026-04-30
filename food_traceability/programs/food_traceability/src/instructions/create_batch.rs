@@ -18,9 +18,9 @@ pub struct CreateBatch<'info> {
 
     #[account(
         seeds = [b"actor", authority.key().as_ref()],
-        bump = actor_profile.bump,
-        // Validación: Solo el rol Producer puede originar lotes
-        constraint = actor_profile.role == ActorRole::Producer @ FoodTraceabilityError::OnlyProducersCanCreate
+        bump = actor_profile.bump,        
+        constraint = (actor_profile.role == ActorRole::Producer || actor_profile.role == ActorRole::Factory) 
+                 @ FoodTraceabilityError::OnlyAuthorizedRolesCanCreate
     )]
     pub actor_profile: Account<'info, Actor>,
 
@@ -36,10 +36,12 @@ pub fn handler(
     product: String,
     origin: String,
     quantity: u64,
+    parent_sources: Vec<Pubkey>, // 1. Añadimos el nuevo parámetro
 ) -> Result<()> {
     let batch = &mut ctx.accounts.batch;
     let clock = Clock::get()?;
 
+    // Asignación de datos al estado de la cuenta
     batch.id = id;
     batch.creator = ctx.accounts.authority.key();
     batch.product = product.clone();
@@ -47,11 +49,12 @@ pub fn handler(
     batch.quantity = quantity;
     batch.date_created = clock.unix_timestamp;
     batch.status = BatchStatus::Created;
-    batch.event_count = 0; // Inicializamos contador de eventos
-    batch.certificate_count = 0; // Inicializamos contador de certificados
+    batch.event_count = 0;
+    batch.certificate_count = 0;
+    batch.parent_sources = parent_sources; // 2. Guardamos los insumos
     batch.bump = ctx.bumps.batch;
 
-    // Disparamos el evento con tus definiciones
+    // 3. Mantenemos el disparo del evento (puedes añadir parent_sources al evento si quieres)
     emit!(BatchCreated {
         batch_id: id,
         creator: ctx.accounts.authority.key(),
@@ -60,6 +63,11 @@ pub fn handler(
         timestamp: clock.unix_timestamp,
     });
 
-    msg!("Lote #{} creado exitosamente por el productor", id);
+    msg!(
+        "Lote #{} creado exitosamente con {} fuentes de origen",
+        id,
+        batch.parent_sources.len()
+    );
+
     Ok(())
 }

@@ -82,8 +82,16 @@ pub mod food_traceability {
         product: String,
         origin: String,
         quantity: u64,
+        parent_sources: Vec<Pubkey>, // <-- Añadir aquí
     ) -> Result<()> {
-        crate::instructions::create_batch::handler(ctx, id, product, origin, quantity)
+        crate::instructions::create_batch::handler(
+            ctx,
+            id,
+            product,
+            origin,
+            quantity,
+            parent_sources,
+        )
     }
 
     pub fn record_event(
