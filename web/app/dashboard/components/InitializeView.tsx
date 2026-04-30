@@ -1,3 +1,22 @@
+/**
+ * Vista de Inicialización del Programa (Admin Only).
+ * 
+ * Este componente proporciona la interfaz necesaria para realizar la configuración 
+ * inicial del Smart Contract en la blockchain de Solana.
+ * 
+ * @component
+ * @param {InitializeViewProps} props - Propiedades del componente.
+ * @param {Function} props.onInitialize - Ejecuta la instrucción `initialize` del programa Anchor.
+ * @param {boolean} props.loading - Indica si hay una transacción de Solana en curso.
+ * @param {boolean} props.connected - Estado de conexión de la wallet del administrador.
+ * @param {Object} props.status - Objeto de feedback para mostrar mensajes de éxito o error tras la transacción.
+ * 
+ * @description
+ * - Es una vista de seguridad: solo debe ser accesible si el contrato no ha sido inicializado.
+ * - Establece la "Autoridad Administradora" (Admin Authority) del sistema.
+ * - Incluye estados visuales dinámicos basados en la conexión de la wallet y el progreso de la transacción.
+ */
+
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import Link from 'next/link';
 
@@ -47,24 +66,22 @@ export const InitializeView = ({ onInitialize, loading, connected, status }: Ini
           <button
             onClick={onInitialize}
             disabled={loading || !connected}
-            className={`w-full md:w-auto px-10 py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-3 ${
-              loading ? 'bg-gray-700' : connected ? 'bg-green-500 hover:bg-green-400 text-black' : 'bg-red-500/20 text-red-500'
-            }`}
+            className={`w-full md:w-auto px-10 py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-3 ${loading ? 'bg-gray-700' : connected ? 'bg-green-500 hover:bg-green-400 text-black' : 'bg-red-500/20 text-red-500'
+              }`}
           >
             {loading ? 'Procesando en Blockchain...' : connected ? 'Inicializar Contrato Ahora' : 'Conecta tu Wallet'}
           </button>
 
           {status.message && (
-  <div className={`p-4 rounded-lg border text-sm ${
-    status.type === 'error' 
-      ? 'bg-red-500/10 border-red-500/30 text-red-400' 
-      : status.type === 'success' 
-        ? 'bg-green-500/10 border-green-500/30 text-green-400' 
-        : 'bg-blue-500/10 border-blue-500/30 text-blue-400'
-  }`}>
-    {status.message}
-  </div>
-)}
+            <div className={`p-4 rounded-lg border text-sm ${status.type === 'error'
+                ? 'bg-red-500/10 border-red-500/30 text-red-400'
+                : status.type === 'success'
+                  ? 'bg-green-500/10 border-green-500/30 text-green-400'
+                  : 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+              }`}>
+              {status.message}
+            </div>
+          )}
         </div>
 
         <div className="bg-[#161b22] border border-gray-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
@@ -72,7 +89,7 @@ export const InitializeView = ({ onInitialize, loading, connected, status }: Ini
           <div className="space-y-4">
             {["Gestión de Actores", "Control de Lotes", "Certificaciones", "Gobernanza"].map((item, i) => (
               <div key={i} className="flex gap-4 p-3 hover:bg-white/5 rounded-xl transition-colors">
-                <div className="text-green-500 font-bold">0{i+1}</div>
+                <div className="text-green-500 font-bold">0{i + 1}</div>
                 <h4 className="font-semibold text-gray-200">{item}</h4>
               </div>
             ))}

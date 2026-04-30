@@ -1,3 +1,20 @@
+/**
+ * Componente de Selección de Roles.
+ * 
+ * Presenta una interfaz de cuadrícula donde los usuarios pueden elegir su función
+ * dentro de la cadena de suministro de FoodTrace y enviar la transacción de registro.
+ * 
+ * @component
+ * @param {RoleSelectionProps} props - Propiedades del componente.
+ * @param {Function} props.onSelectRole - Callback que se dispara al hacer clic en 'Solicitar Rol'. Recibe el ID del rol.
+ * @param {boolean} props.loading - Estado de carga global durante la transacción en la blockchain.
+ * @param {string | null} props.selectedRole - El ID del rol que se está procesando actualmente para mostrar feedback visual.
+ * 
+ * @description
+ * - Renderiza una tarjeta por cada rol definido en la constante `ROLES`.
+ * - Incluye el `WalletMultiButton` para asegurar que el usuario esté conectado antes de solicitar un rol.
+ * - Utiliza estados de deshabilitación para evitar múltiples solicitudes simultáneas.
+ */
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 
 interface RoleSelectionProps {
@@ -28,7 +45,7 @@ export const RoleSelection = ({ onSelectRole, loading, selectedRole }: RoleSelec
 
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
         {ROLES.map((role) => (
-          <div 
+          <div
             key={role.id}
             className="bg-[#161b22] border border-gray-800 rounded-2xl p-6 hover:border-green-500/50 transition-all group flex flex-col justify-between"
           >
@@ -37,7 +54,7 @@ export const RoleSelection = ({ onSelectRole, loading, selectedRole }: RoleSelec
               <h3 className="text-xl font-bold mb-2 text-green-500">{role.id}</h3>
               <p className="text-sm text-gray-500 leading-relaxed">{role.desc}</p>
             </div>
-            <button 
+            <button
               onClick={() => onSelectRole(role.id)}
               disabled={loading}
               className="mt-6 w-full py-2 bg-gray-800 group-hover:bg-green-500 group-hover:text-black rounded-lg font-bold text-sm transition-colors disabled:opacity-50"

@@ -1,3 +1,23 @@
+/**
+ * Panel de Administración de FoodTrace.
+ * 
+ * Este componente proporciona una interfaz para que el administrador gestione
+ * las solicitudes de rol pendientes. Permite la validación de identidades
+ * y la incorporación oficial de actores a la cadena de suministro.
+ * 
+ * @component
+ * @param {Object} props - Propiedades del componente.
+ * @param {any} props.program - Instancia del programa Anchor para interactuar con el Smart Contract.
+ * 
+ * @description
+ * - Gestión de Estado: Centraliza el listado de solicitudes (`requests`) y estados de carga (`loading`).
+ * - Interacción con Blockchain: 
+ *    - Recupera cuentas `roleRequest` filtrando por estado 'Pending'.
+ *    - Ejecuta instrucciones `approveActor` para registrar nuevos perfiles.
+ *    - Ejecuta instrucciones `rejectRole` para denegar accesos y liberar espacio en la red (cerrar cuentas).
+ * - Derivación de PDAs: Calcula dinámicamente las direcciones `config` y `actor` necesarias para las transacciones.
+ */
+
 import { useState, useEffect } from 'react';
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { PublicKey } from "@solana/web3.js";
@@ -13,14 +33,14 @@ export const AdminDashboardView = ({ program }: { program: any }) => {
     if (!program) return;
     try {
       setLoading(true);
-      // Buscamos todas las cuentas de tipo 'roleRequest' en la blockchain
-      const allRequests = await program.account.roleRequest.all();
       
+      const allRequests = await program.account.roleRequest.all();
+
       // Filtramos solo las que están en estado "Pending"
-      const pending = allRequests.filter((req: any) => 
+      const pending = allRequests.filter((req: any) =>
         req.account.status.pending !== undefined
       );
-      
+
       setRequests(pending);
     } catch (error) {
       console.error("Error al cargar solicitudes:", error);
@@ -39,7 +59,7 @@ export const AdminDashboardView = ({ program }: { program: any }) => {
 
     try {
       setLoading(true);
-      
+
       // Derivamos las PDAs necesarias
       const [configPDA] = PublicKey.findProgramAddressSync(
         [Buffer.from("config")],
@@ -77,17 +97,17 @@ export const AdminDashboardView = ({ program }: { program: any }) => {
 
     try {
       setLoading(true);
-      
+
       const [configPDA] = PublicKey.findProgramAddressSync(
         [Buffer.from("config")],
         program.programId
       );
 
-      // Llamada a la instrucción que acabas de crear en Rust
+      
       await program.methods
         .rejectRole()
         .accounts({
-          roleRequest: requestPubKey, // El nombre debe coincidir con el struct en Rust
+          roleRequest: requestPubKey,
           admin: publicKey,
           config: configPDA,
         })
@@ -141,10 +161,10 @@ export const AdminDashboardView = ({ program }: { program: any }) => {
                         {Object.keys(req.account.requestedRole)[0]}
                       </span>
                     </div>
-                    
+
                     {/* Contenedor de acciones */}
                     <div className="flex items-center gap-3">
-                      <button 
+                      <button
                         disabled={loading}
                         onClick={() => handleReject(req.publicKey)}
                         className="text-red-500 hover:bg-red-500/10 px-4 py-2 rounded-lg font-bold transition-all disabled:opacity-50 border border-transparent hover:border-red-500/20"
@@ -152,7 +172,7 @@ export const AdminDashboardView = ({ program }: { program: any }) => {
                         {loading ? "..." : "Rechazar"}
                       </button>
 
-                      <button 
+                      <button
                         disabled={loading}
                         onClick={() => handleApprove(req.publicKey, req.account.user)}
                         className="bg-green-500 hover:bg-green-400 text-black px-6 py-2 rounded-lg font-bold transition-colors disabled:opacity-50"
@@ -164,13 +184,13 @@ export const AdminDashboardView = ({ program }: { program: any }) => {
                 ))
               )}
             </div>
-            
+
           </div>
 
           {/* CARD SECUNDARIA (EJEMPLO) */}
           <div className="bg-[#161b22] border border-gray-800 rounded-2xl p-8 opacity-50 cursor-not-allowed">
-             <h3 className="text-2xl font-bold mb-3 text-gray-400">Estadísticas del Sistema</h3>
-             <p className="text-gray-500 italic text-sm">Próximamente: Visualiza el flujo de trazabilidad global.</p>
+            <h3 className="text-2xl font-bold mb-3 text-gray-400">Estadísticas del Sistema</h3>
+            <p className="text-gray-500 italic text-sm">Próximamente: Visualiza el flujo de trazabilidad global.</p>
           </div>
         </div>
       </div>

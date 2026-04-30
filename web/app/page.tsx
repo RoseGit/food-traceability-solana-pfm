@@ -1,3 +1,20 @@
+/**
+ * Componente de la página de inicio (Landing Page).
+ * 
+ * Esta vista presenta la propuesta de valor de FoodTrace y permite a los usuarios
+ * conectar su billetera de Solana directamente desde la página principal.
+ * 
+ * @component
+ * 
+ * @description
+ * - Control de Hidratación: Utiliza el estado `mounted` para evitar errores de 
+ *   desajuste entre el renderizado del servidor (SSR) y el cliente, especialmente 
+ *   crítico al usar componentes de Wallet Adapter.
+ * - Estado de Conexión: Monitorea si la billetera está vinculada mediante `useWallet`
+ *   para mostrar indicadores visuales en tiempo real.
+ * - Navegación: Proporciona un punto de entrada claro hacia la aplicación principal (/dashboard).
+ */
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -20,7 +37,7 @@ export default function Home() {
       {/* --- ENCABEZADO (NAVBAR) --- */}
       <header className="w-full px-8 py-4 flex justify-between items-center border-b border-gray-800 bg-[#161b22]">
         <div className="flex items-center gap-2">
-          {/* Icono representativo (puedes cambiarlo por un logo) */}
+          {}
           <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center font-bold text-black">
             F
           </div>
@@ -45,8 +62,8 @@ export default function Home() {
           </h1>
 
           <p className="text-gray-400 text-lg md:text-xl leading-relaxed">
-            Plataforma basada en **Solana** diseñada para garantizar la transparencia en la cadena 
-            de suministro. Registra cada paso del camino, desde el productor hasta tu mesa, 
+            Plataforma basada en **Solana** diseñada para garantizar la transparencia en la cadena
+            de suministro. Registra cada paso del camino, desde el productor hasta tu mesa,
             usando contratos inteligentes para asegurar que la información sea inmutable y confiable.
           </p>
 
